@@ -114,9 +114,35 @@ for the top frame.
 
 As said before, this API does not work on an event page. Use a background page instead.
 
+## How does it work?
+You can take a look at the source code of `chrome.tabs.executeScriptInFrame.js` to see how it works.
+In short:
+
+1. If `frameId` is `0`, then `chrome.tabs.executeScript` is used directly, because it's possible
+   to restrict the content script to the top-level frame using `allFrames:false`.
+2. If the content script is specified by file name, then the contents of the file is fetched.
+3. A content script, composed of the following items is executed in all frames:
+   - Frame ID
+   - Serialized code
+   - Dummy URL
+
+4. **This is the magic to get the frame ID within a content script**.  
+   An `<img>` object is created, and its `src` is set to the dummy URL.
+5. The dummy URL is intercepted by the `webRequest` API in the background page, and redirected
+   to a GIF image whose width is equal to `frame ID + 1` (the frame ID is provided by the webRequest event).
+6. The `onload` event of the image is triggered. In this event, the `frameId` is read from the `naturalWidth`
+   property and cached for future calls.
+7. Step 4-7 is repeated recursively for each frame whose protocol is not http, https or file. This is done
+   to catch `about:blank` and `javascript:` frames.
+8. One of the scripts in the previous steps will find a matching frameId. When the frame ID matches, the code
+   is executed, and the result is sent back to the background script using the message passing API.
+9. The callback of `executeScriptInFrame` is called once step 8 has run, or when too much time has passed.
+
 ## See also
 - [Issue 63979 on Chromium's bug tracker](https://code.google.com/p/chromium/issues/detail?id=63979)
   "Should be able to use insertCSS and executeScript for a specific frame"
+- [Issue 264286 on Chromium's bug tracker](https://code.google.com/p/chromium/issues/detail?id=264286)
+  "Chrome extensions: Ability to message a specific frame"
 
 ## License
 (c) 2013 Rob Wu <gwnRob@gmail.com> (https://robwu.nl)  
