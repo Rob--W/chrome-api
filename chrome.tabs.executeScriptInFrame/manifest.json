@@ -1,0 +1,22 @@
+{
+    "name": "Test chrome.tabs.executeScriptInFrame",
+    "description": "Test the custom executeScriptInFrame API. Visit any http(s) page/frame, and use the context menu.",
+    "version": "1.0",
+    "manifest_version": 2,
+    "background": {
+        "scripts": [
+            "chrome.tabs.executeScriptInFrame.js",
+            "background.js"
+        ],
+        "persistent": true
+    },
+    "permissions": [
+        "contextMenus",
+        "webNavigation",
+        "*://*/*",
+
+        "webRequest",
+        "webRequestBlocking",
+        "*://robwu.nl/204*"
+    ]
+}
