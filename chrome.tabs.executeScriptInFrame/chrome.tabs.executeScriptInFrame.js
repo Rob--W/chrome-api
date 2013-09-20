@@ -111,6 +111,8 @@ function executeScript(details, callback) {
     var sourceValue = details[sourceType];
     console.assert(typeof sourceValue === 'string', 'details.' + sourceType + ' must be a string');
     var runAt = details.runAt;
+    if (!callback) callback = function() {/* no-op*/};
+    console.assert(typeof callback === 'function', 'callback must be a function');
 
     if (frameId === 0) {
         // No need for heavy lifting if we want to inject the script in the main frame
