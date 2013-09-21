@@ -27,7 +27,7 @@ chrome.tabs.executeScriptInFrame = executeScript;
 var URL_WHAT_IS_MY_FRAME_ID = 'https://robwu.nl/204?' + chrome.runtime.id + '/frameId';
 // The callback will be called within ... ms:
 // Don't set a too low value.
-var MAXIMUM_RESPONSE_TIME_MS = 5000;
+var MAXIMUM_RESPONSE_TIME_MS = 1000;
 
 // Callbacks are stored here until they're invoked.
 // Key = dummyUrl, value = callback function
@@ -80,8 +80,12 @@ chrome.webRequest.onBeforeRequest.addListener(function showFrameId(details) {
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     if (message && message.executeScriptCallback) {
         var callback = callbacks[message.dummyUrl];
-        delete callbacks[message.dummyUrl];
         if (callback) {
+            if (message.hello) {
+                clearTimeout(callback.timer);
+                return;
+            }
+            delete callbacks[message.dummyUrl];
             // Result within an array to be consistent with the chrome.tabs.executeScript API.
             callback([message.evalResult]);
         } else {
@@ -165,7 +169,7 @@ function executeScript(details, callback) {
             runAt: 'document_start'
         }, function(results) {
             if (results) {
-                setTimeout(executeScriptTimedOut, MAXIMUM_RESPONSE_TIME_MS);
+                callback.timer = setTimeout(executeScriptTimedOut, MAXIMUM_RESPONSE_TIME_MS);
             } else {
                 // Failed :(
                 delete callbacks[dummyUrl];
@@ -175,10 +179,10 @@ function executeScript(details, callback) {
     }
     function executeScriptTimedOut() {
         var callback = callbacks[dummyUrl];
-        delete callbacks[dummyUrl];
         if (!callback) {
             return;
         }
+        delete callbacks[dummyUrl];
         var message = 'Failed to execute script: Frame ' + frameId + ' not found in tab ' + tabId;
         console.error('executeScript: ' + message);
         chrome.runtime.lastError = chrome.extension.lastError = { message: message };
@@ -223,6 +227,14 @@ var DETECT_FRAME = '' + function checkFrame(window, dummyUrl, frameId, code) {
         if (window.__executeScript_frameId__ !== frameId) {
             return;
         }
+        // Send an early message to make sure that any blocking code
+        // in the evaluated code does not cause the time-out in the background page
+        // to be triggered
+        chrome.runtime.sendMessage({
+            executeScriptCallback: true,
+            hello: true,
+            dummyUrl: dummyUrl
+        });
         var result = null;
         try {
             // jshint evil:true
