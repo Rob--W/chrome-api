@@ -9,7 +9,8 @@ The method follows the same syntax as[`chrome.tabs.executeScript`]
 (https://developer.chrome.com/extensions/tabs.html#method-executeScript),
 except that the first argument (specified by the [`InjectDetails` type]
 (https://developer.chrome.com/extensions/tabs.html#type-InjectDetails))
-is extended with the `frameId` property.
+is extended with the `frameId` property. Since `frameId` makes no sense
+without a tabId, the `tabId` parameter is required.
 
 ## Example
 This repository contains a stand-alone example, which shows how to generally use the API.
@@ -18,9 +19,8 @@ The following code example is different, it shows how to get the cookie of a spe
 
 ```javascript
 function alertCookie(tabId, frameId) {
-    chrome.tabs.executeScriptInFrame({
+    chrome.tabs.executeScriptInFrame(tabId, {
         frameId: frameId,
-        tabId: tab.id,
         code: '// This code runs in one frame, specified via frameId \n' +
               'alert(location.href);' +
               'document.cookie;'

@@ -24,9 +24,8 @@ chrome.contextMenus.onClicked.addListener(function(info, tab) {
             console.warn('Found more than one frame with URL ' + url);
         }
         var frameId = details[0].frameId;
-        chrome.tabs.executeScriptInFrame({
+        chrome.tabs.executeScriptInFrame(tab.id, {
             frameId: frameId,
-            tabId: tab.id,
             code: 'document.body.style.backgroundColor="red";' +
                   'alert(location.href);' +
                   'document.body.style.backgroundColor = "";' +

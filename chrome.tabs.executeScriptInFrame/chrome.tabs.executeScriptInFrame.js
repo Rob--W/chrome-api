@@ -97,16 +97,16 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 /**
  * Execute content script in a specific frame.
  *
- * @param details.tabId {integer} required
+ * @param tabId {integer} required
  * @param details.frameId {integer} required
  * @param details.code {string} Code or file is required (not both)
  * @param details.file {string} Code or file is required (not both)
  * @param details.runAt {optional string} One of "document_start", "document_end", "document_idle"
- * @param callback(optional array of any result)
+ * @param callback {optional function(optional array of any result)} When an error occurs, result
+ *                                                                   is not set.
  */
-function executeScript(details, callback) {
+function executeScript(tabId, details, callback) {
     console.assert(typeof details === 'object', 'details must be an object (argument 0)');
-    var tabId = details.tabId;
     var frameId = details.frameId;
     console.assert(typeof tabId === 'number', 'details.tabId must be a number');
     console.assert(typeof frameId === 'number', 'details.frameId must be a number');
