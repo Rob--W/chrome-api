@@ -16,7 +16,9 @@
         "*://*/*",
 
         "webRequest",
-        "webRequestBlocking",
-        "*://robwu.nl/204*"
+        "webRequestBlocking"
+    ],
+    "web_accessible_resources": [
+        "getFrameId"
     ]
 }

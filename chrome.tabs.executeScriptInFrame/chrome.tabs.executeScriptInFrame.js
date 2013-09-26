@@ -12,8 +12,10 @@
  * Required permissions:
  * webRequest
  * webRequestBlocking
- * https://robwu.nl/204*
  * Host permissions for the tab
+ *
+ * In addition, the following field must also be set in manifest.json:
+ * "web_accessible_resources": ["getFrameId"]
  */
 
 /* jshint browser:true, maxlen:100 */
@@ -23,8 +25,8 @@
 chrome.tabs.executeScriptInFrame = executeScript;
 
 // This URL is used to communicate the frameId. The resource is never visited, so it should
-// be a non-existent location. Namespaced to extensionID to prevent conflicts.
-var URL_WHAT_IS_MY_FRAME_ID = 'https://robwu.nl/204?' + chrome.runtime.id + '/frameId';
+// be a non-existent location.
+var URL_WHAT_IS_MY_FRAME_ID = chrome.extension.getURL('getFrameId');
 // The callback will be called within ... ms:
 // Don't set a too low value.
 var MAXIMUM_RESPONSE_TIME_MS = 1000;

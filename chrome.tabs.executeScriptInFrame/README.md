@@ -83,9 +83,11 @@ The following permissions are required, and needs to be declared in your
     ...
     "permissions": [
         "webRequest",
-        "webRequestBlocking",
-        "*://robwu.nl/204*"
+        "webRequestBlocking"
     ],
+    "web_accessible_resources": [
+        "getFrameId"
+    ]
     ...
 ```
 
@@ -97,7 +99,7 @@ In addition, you usually need the `webNavigation` permission as well, in order t
  [`chrome.webNavigation.getAllFrames`]
  (https://developer.chrome.com/extensions/webNavigation.html#method-getAllFrames).
 
-`*://robwu.nl/204` is a location used for the determination of the frame ID.
+`"getFrameId"` needs to be whitelisted, because this **non-existent** URL is used to detect the frameId.
 This URL is **never** accessed, because the request to this URL is immediately
 aborted, and redirected to a data-URL.
 
