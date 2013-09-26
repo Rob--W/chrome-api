@@ -79,13 +79,13 @@ chrome.webRequest.onBeforeRequest.addListener(function showFrameId(details) {
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     if (message && message.executeScriptCallback) {
-        var callback = callbacks[message.dummyUrl];
+        var callback = callbacks[message.identifier];
         if (callback) {
             if (message.hello) {
                 clearTimeout(callback.timer);
                 return;
             }
-            delete callbacks[message.dummyUrl];
+            delete callbacks[message.identifier];
             // Result within an array to be consistent with the chrome.tabs.executeScript API.
             callback([message.evalResult]);
         } else {
@@ -129,8 +129,7 @@ function executeScript(tabId, details, callback) {
         return;
     }
 
-    // URL to uniquely identify a executeScript call
-    var dummyUrl = URL_WHAT_IS_MY_FRAME_ID + Math.random();
+    var identifier = Math.random().toString(36);
 
     if (sourceType === 'code') {
         executeScriptInFrame();
@@ -158,11 +157,11 @@ function executeScript(tabId, details, callback) {
 
 
     function executeScriptInFrame() {
-        callbacks[dummyUrl] = callback;
+        callbacks[identifier] = callback;
         chrome.tabs.executeScript(tabId, {
             code: '(' + DETECT_FRAME + ')(' +
                   'window,' +
-                  JSON.stringify(dummyUrl) + ',' +
+                  JSON.stringify(identifier) + ',' +
                   frameId + ',' +
                   JSON.stringify(sourceValue) + ')',
             allFrames: true,
@@ -172,17 +171,17 @@ function executeScript(tabId, details, callback) {
                 callback.timer = setTimeout(executeScriptTimedOut, MAXIMUM_RESPONSE_TIME_MS);
             } else {
                 // Failed :(
-                delete callbacks[dummyUrl];
+                delete callbacks[identifier];
                 callback();
             }
         });
     }
     function executeScriptTimedOut() {
-        var callback = callbacks[dummyUrl];
+        var callback = callbacks[identifier];
         if (!callback) {
             return;
         }
-        delete callbacks[dummyUrl];
+        delete callbacks[identifier];
         var message = 'Failed to execute script: Frame ' + frameId + ' not found in tab ' + tabId;
         console.error('executeScript: ' + message);
         chrome.runtime.lastError = chrome.extension.lastError = { message: message };
@@ -197,7 +196,7 @@ function executeScript(tabId, details, callback) {
 /**
  * Code executed as a content script.
  */
-var DETECT_FRAME = '' + function checkFrame(window, dummyUrl, frameId, code) {
+var DETECT_FRAME = '' + function checkFrame(window, identifier, frameId, code) {
     var i;
     if ('__executeScript_frameId__' in window) {
         evalAsContentScript();
@@ -208,7 +207,9 @@ var DETECT_FRAME = '' + function checkFrame(window, dummyUrl, frameId, code) {
             window.__executeScript_frameId__ = this.naturalWidth - 1;
             evalAsContentScript();
         };
-        i.src = dummyUrl + Math.random(); // Trigger webRequest event
+        // Trigger webRequest event to get frameId
+        // (append extra characters to bust the cache)
+        i.src = URL_WHAT_IS_MY_FRAME_ID + '?' + Math.random().toString(36).slice(-6);
     }
 
     for (i = 0 ; i < window.frames.length; ++i) {
@@ -216,7 +217,7 @@ var DETECT_FRAME = '' + function checkFrame(window, dummyUrl, frameId, code) {
             var frame = window.frames[i];
             var scheme = frame.location.protocol;
             if (scheme !== 'https:' && scheme !== 'http:' && scheme !== 'file:') {
-                checkFrame(frame, dummyUrl, frameId, code);
+                checkFrame(frame, identifier, frameId, code);
             }
         } catch (e) {
             // blocked by same origin policy, so it's not a javascript: / about:blank
@@ -233,7 +234,7 @@ var DETECT_FRAME = '' + function checkFrame(window, dummyUrl, frameId, code) {
         chrome.runtime.sendMessage({
             executeScriptCallback: true,
             hello: true,
-            dummyUrl: dummyUrl
+            identifier: identifier
         });
         var result = null;
         try {
@@ -243,10 +244,10 @@ var DETECT_FRAME = '' + function checkFrame(window, dummyUrl, frameId, code) {
             chrome.runtime.sendMessage({
                 executeScriptCallback: true,
                 evalResult: result,
-                dummyUrl: dummyUrl
+                identifier: identifier
             });
         }
     }
-};
+}.toString().replace('URL_WHAT_IS_MY_FRAME_ID', JSON.stringify(URL_WHAT_IS_MY_FRAME_ID));
 
 })();
