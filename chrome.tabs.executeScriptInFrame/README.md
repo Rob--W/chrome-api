@@ -87,7 +87,7 @@ The following permissions are required, and needs to be declared in your
     ],
     "web_accessible_resources": [
         "getFrameId"
-    ]
+    ],
     ...
 ```
 
@@ -105,6 +105,20 @@ aborted, and redirected to a data-URL.
 
 **This API cannot be used with [event pages](https://developer.chrome.com/extensions/event_pages.html),
 because the `webRequest` API cannot be used with event pages.**
+
+Do not forget to copy this file to your extension's directory, and load the script. For example using:
+
+```json
+    ...
+    "background": {
+        "scripts": [
+            "chrome.tabs.executeScriptInFrame.js",
+            "background.js"
+        ],
+        "persistent": true
+    },
+    ...
+```
 
 ## Limitations
 All limitations of the `chrome.tabs.executeScript` method apply: You cannot execute
