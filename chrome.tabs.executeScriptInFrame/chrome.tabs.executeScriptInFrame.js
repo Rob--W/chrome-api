@@ -4,7 +4,8 @@
  * https://github.com/Rob--W/chrome-api/chrome.tabs.executeScriptInFrame
  *
  * Implements the chrome.tabs.executeScriptInFrame API.
- * This API exposes the chrome.tabs.executeScript method, extended with property frameId.
+ * This API is similar to the chrome.tabs.executeScript method, except
+ *  that it also recognizes the "frameId" property.
  * This frameId can be obtained through the webNavigation or webRequest API.
  *
  * When an error occurs, chrome.runtime.lastError is set.
@@ -18,9 +19,9 @@
  * "web_accessible_resources": ["getFrameId"]
  */
 
+(function() {
 /* jshint browser:true, maxlen:100 */
 /* globals chrome, console */
-(function() {
 'use strict';
 chrome.tabs.executeScriptInFrame = executeScript;
 
@@ -38,7 +39,7 @@ var callbacks = {};
 chrome.webRequest.onBeforeRequest.addListener(function showFrameId(details) {
     // Positive integer frameId >= 0
     // Since an image is used as a data transport, we add 1 to get a non-zero height.
-    var frameId = details.frameId + 1; 
+    var frameId = details.frameId + 1;
     // Assume that the frameId fits in two bytes - which is a very reasonable assumption.
     var width = String.fromCharCode(frameId & 0xFF, frameId & 0xFF00);
     var height = '\x01\x00';
