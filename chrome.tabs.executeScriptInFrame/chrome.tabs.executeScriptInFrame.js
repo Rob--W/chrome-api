@@ -26,7 +26,7 @@
 chrome.tabs.executeScriptInFrame = executeScript;
 
 // This URL is used to communicate the frameId. The resource is never visited, so it should
-// be a non-existent location.
+// be a non-existent location. Do not use *, ", ' or line breaks in the file name.
 var URL_WHAT_IS_MY_FRAME_ID = chrome.extension.getURL('getFrameId');
 // The callback will be called within ... ms:
 // Don't set a too low value.
@@ -212,7 +212,7 @@ var DETECT_FRAME = '' + function checkFrame(window, identifier, frameId, code) {
         };
         // Trigger webRequest event to get frameId
         // (append extra characters to bust the cache)
-        i.src = URL_WHAT_IS_MY_FRAME_ID + '?' + Math.random().toString(36).slice(-6);
+        i.src = 'URL_WHAT_IS_MY_FRAME_ID?' + Math.random().toString(36).slice(-6);
     }
 
     for (i = 0 ; i < window.frames.length; ++i) {
@@ -251,6 +251,6 @@ var DETECT_FRAME = '' + function checkFrame(window, identifier, frameId, code) {
             });
         }
     }
-}.toString().replace('URL_WHAT_IS_MY_FRAME_ID', JSON.stringify(URL_WHAT_IS_MY_FRAME_ID));
+}.toString().replace('URL_WHAT_IS_MY_FRAME_ID', URL_WHAT_IS_MY_FRAME_ID);
 
 })();
