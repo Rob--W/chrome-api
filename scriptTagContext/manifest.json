@@ -1,0 +1,21 @@
+{
+    "name": "scriptTagContext.js demo",
+    "description": "Shows that RequireJS and JSONP work out of the box with scriptTagContext.js",
+    "version": "1",
+    "manifest_version": 2,
+    "content_scripts": [{
+        "js": [
+            "scriptTagContext.js",
+            "demo-files/require.js",
+            "demo-files/contentscript.js"
+        ],
+        "matches": ["*://*/*"]
+    }],
+    "permissions": [
+        "https://api.github.com/users/Rob--W*"
+    ],
+    "web_accessible_resources": [
+        "demo-files/require.js",
+        "demo-files/jquery.js"
+    ]
+}
