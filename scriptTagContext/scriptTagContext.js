@@ -3,8 +3,8 @@
  * Released under the MIT license
  * https://github.com/Rob--W/chrome-api/scriptTagContext/
  *
- * Intercept appendChild and replaceChild calls in order to load scripts in
- * the current execution environment (content script) instead of the web page.
+ * Intercept appendChild, insertBefore and replaceChild calls in order to load scripts
+ * in the current execution environment (content script) instead of the web page.
  *
  * This is useful when you're using third-party libraries which rely on <script>
  * tags for loading dependencies, or use web services with JSONP.
@@ -16,9 +16,12 @@
  *
  * Note: This script is ONLY useful inside a content script.
  */
-;(function() {
+if (!window.hasRunScriptTagContext) (function() {
     /* globals Event, Node, setTimeout, window, XMLHttpRequest */
     'use strict';
+    // Run once.
+    window.hasRunScriptTagContext = true;
+
     var orig_insertBefore = Node.prototype.insertBefore;
     Node.prototype.insertBefore = function insertBefore(node, nextNode) {
         if (node && 'src' in node && /^script$/i.test(node.tagName) && !node.__isScriptIntercepted) {
@@ -73,6 +76,13 @@
     };
     Node.prototype.appendChild = function appendChild(node) {
         return this.insertBefore(node, null);
+    };
+    Node.prototype.replaceChild = function replaceChild(node, oldNode) {
+        if (oldNode) {
+            this.insertBefore(node, oldNode);
+        }
+        this.removeChild(oldNode);
+        return oldNode;
     };
 
     function loadScript(node) {
