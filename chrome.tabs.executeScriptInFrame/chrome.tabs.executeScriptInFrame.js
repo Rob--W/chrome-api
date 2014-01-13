@@ -41,7 +41,7 @@ chrome.webRequest.onBeforeRequest.addListener(function showFrameId(details) {
     // Since an image is used as a data transport, we add 1 to get a non-zero height.
     var frameId = details.frameId + 1;
     // Assume that the frameId fits in two bytes - which is a very reasonable assumption.
-    var width = String.fromCharCode(frameId & 0xFF, frameId & 0xFF00);
+    var width = String.fromCharCode(frameId & 0xFF, frameId >> 8);
     var height = '\x01\x00';
     // Convert data to base64 to avoid loss of bytes
     var image = 'data:image/gif;base64,' + btoa(
