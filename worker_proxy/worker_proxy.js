@@ -69,23 +69,23 @@
         }
     }
 
+    var worker_proxy_token;
     /**
      * Get the session token used to authenticate messages between the
-     * content script and worker proxy page. This value will be calculated
-     * when the patch is used for the first time, and will not change until
-     * until all chrome-extension://-pages are closed.
+     * content script and worker proxy page. This value will change whenever the
+     * background/event page unloads.
      */
     function getProxyWorkerChannelToken() {
-        if (!sessionStorage.worker_proxy_token) {
+        if (!worker_proxy_token) {
             var buffer = new Uint8Array(100);
             crypto.getRandomValues(buffer);
             var random_token = '';
             for (var i = 0; i < buffer.length; ++i) {
                 random_token += buffer[i].toString(36);
             }
-            sessionStorage.worker_proxy_token = random_token;
+            worker_proxy_token = random_token;
         }
-        return sessionStorage.worker_proxy_token;
+        return worker_proxy_token;
     }
 
     // Worker-proxy specific
@@ -147,7 +147,6 @@
     var proxyFrame;
     var proxyFrameMessageQueue = [];
     var proxyFrameReady = false;
-    var proxyChannelToken;
     /**
      * Post a message to the worker proxy frame.
      *
@@ -155,22 +154,36 @@
      * @param {array|undefined} transferable  List of transferable objects.
      */
     function postMessageToWorkerProxy(message, transferables) {
-        if (proxyFrameReady && !proxyFrame.contentWindow) {
-            // This should NEVER happen. When it happens, try to recover by
-            // creating the frame again, so that new Workers can be created.
-            console.warn('WARNING: The worker proxy frame was removed; ' +
-                    'all previous workers have been terminated. ');
-            proxyFrame = null;
-            proxyFrameReady = false;
-        }
-        if (proxyFrameReady && proxyChannelToken) {
-            message.channel_token = proxyChannelToken;
-            proxyFrame.contentWindow.postMessage(message, EXTENSION_ORIGIN,
-                                                 transferables);
-            return;
-        }
         proxyFrameMessageQueue.push([message, transferables]);
+
         if (!proxyFrame) {
+            loadFrameAndFlush();
+        } else if (proxyFrameReady) {
+            chrome.runtime.sendMessage(MSG_GET_TOKEN, function(token) {
+                if (typeof token != 'string') {
+                    // This message is different from the message below, because
+                    // failure to get a message for the first time is probably
+                    // caused by a developer error. If the first load succeeded
+                    // and the later token requests fail again, then either of
+                    // the following happened:
+                    // 1. The extension runtime was reloaded (e.g. by an update,
+                    //    or by pressing Ctrl + R at chrome://extensions, or
+                    //    by calling chrome.runtime.reload()) (most likely).
+                    // 2. The extension developer messed with the message
+                    //    handling and the first message only succeeded by
+                    //    coincidence.
+                    // 3. A bug in Chrome was introduced (least likely).
+                    console.warn('Failed to initialize Worker because of a ' +
+                            'missing session token. Is the extension runtime ' +
+                            'still valid?');
+                    return;
+                }
+                flushMessages(token);
+            });
+        } // else wait until proxyFrame.onload fires.
+
+        function loadFrameAndFlush() {
+            proxyFrameReady = false;
             proxyFrame = document.createElement('iframe');
             proxyFrame.src = chrome.runtime.getURL('worker_proxy.html');
             proxyFrame.style.cssText = 'position:fixed!important;' +
@@ -189,15 +202,29 @@
                             'background or event page.');
                         return;
                     }
-                    proxyChannelToken = token;
                     proxyFrameReady = true;
-                    while (proxyFrameMessageQueue.length) {
-                        var data = proxyFrameMessageQueue.shift();
-                        postMessageToWorkerProxy(data[0], data[1]);
-                    }
+                    flushMessages(token);
                 });
             };
             (document.body || document.documentElement).appendChild(proxyFrame);
+        }
+
+        function flushMessages(token) {
+            var contentWindow = proxyFrame.contentWindow;
+            if (!contentWindow) {
+                // This should NEVER happen. When it happens, try to recover by
+                // creating the frame again, so that new Workers can be created.
+                console.warn('WARNING: The worker proxy frame was removed; ' +
+                             'all previous workers have been terminated. ');
+                loadFrameAndFlush();
+                return;
+            }
+            while (proxyFrameMessageQueue.length) {
+                // data = [message, transferables]
+                var data = proxyFrameMessageQueue.shift();
+                data[0].channel_token = token;
+                contentWindow.postMessage(data[0], EXTENSION_ORIGIN, data[1]);
+            }
         }
     }
     
