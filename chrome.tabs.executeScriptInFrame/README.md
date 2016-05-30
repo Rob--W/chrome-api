@@ -1,5 +1,11 @@
 # chrome.tabs.executeScriptInFrame
 
+**Obsolete since Chrome 39 - https://crbug.com/63979 has been fixed.**
+This snippet is only kept for historical purposes. If you had previously
+been using `executeScriptInFrame`, simply replace it with `executeScript`.
+
+---
+
 Adds the `chrome.tabs.executeScriptInFrame` method to the
 [`chrome.tabs` API](https://developer.chrome.com/extensions/tabs.html).
 This method allows one to run a content script in the context of a frame,
